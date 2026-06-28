@@ -1,7 +1,7 @@
 ARG REGISTRY_REDSOFT="redos-registry.repos.devzone.local"
 ARG BASE_IMAGE_TAG=8.0.2-260616
 
-FROM ${REGISTRY_REDSOFT}ubi8/ubi-minimal:${BASE_IMAGE_TAG}
+FROM ${REGISTRY_REDSOFT}/ubi8/ubi-minimal:${BASE_IMAGE_TAG}
 ARG BUILD_ENVIRONMENT="devzone"
 
 USER 0
@@ -24,4 +24,23 @@ RUN --mount=type=bind,from=common,target=/common \
         mkdir -p /root/.m2 && \
         cp /common/maven-trust.repo/settings.xml /root/.m2/settings.xml; \
     fi
-RUN dnf update -y && dnf install -y maven-3.9.6
+
+# Установка последней доступной версии Maven
+RUN dnf update -y && \
+    dnf install -y maven && \
+    dnf clean all
+
+# Проверка установленной версии (для информации при сборке)
+RUN mvn --version
+
+# Дополнительные настройки (можно оставить пустыми или добавить при необходимости)
+ENV MAVEN_HOME=/usr/share/maven
+ENV PATH=$PATH:$MAVEN_HOME/bin
+
+WORKDIR /workspace
+RUN mkdir -p /workspace && chmod -R 755 /workspace
+
+ARG APP_UID=1001
+USER $APP_UID
+
+LABEL maintainer="GpnDs"
