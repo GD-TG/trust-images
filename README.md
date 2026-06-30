@@ -1,32 +1,32 @@
 # Trust Images
 
-Docker images for Red Soft UBI based build and runtime platforms.
+Репозиторий с Docker-образами на базе Red Soft UBI для сборки и запуска приложений.
 
-## Images
+## Образы
 
-| Image | Path | Version |
+| Образ | Путь | Версия |
 | --- | --- | --- |
 | Go 1.25 | `docker/redos/ubi8/go/1.25` | `1.25.8` |
 | Go 1.24 | `docker/redos/ubi8/go/1.24` | `1.24.8` |
 | OpenJDK 21 + Maven | `docker/redos/ubi8/openjdk/openjdk-21-mvn-39` | `3.9.6` |
 
-## Configuration
+## Конфигурация
 
-Shared build variables are stored in:
+Общие переменные сборки находятся в файле:
 
 ```text
 docker/.env
 ```
 
-The `common` directory is used as an additional Docker build context for `trust` builds and contains corporate package repository configuration.
+Каталог `common` используется как дополнительный Docker build context для сборок в режиме `trust`. В нем лежит конфигурация корпоративных репозиториев пакетов.
 
-## Build
+## Сборка
 
-Run a build script from the target image directory:
+Скрипт сборки нужно запускать из директории нужного образа:
 
 ```sh
 cd docker/redos/ubi8/go/1.25
 ./build.sh
 ```
 
-Each image README contains its build, publish, and verification commands.
+Команды сборки, публикации и проверки описаны в README каждого образа.

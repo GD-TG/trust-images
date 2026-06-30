@@ -2,12 +2,12 @@
 ARG REGISTRY_REDSOFT="registry.red-soft.ru"
 ARG BASE_IMAGE_TAG="latest"
 
-FROM ${REGISTRY_REDSOFT}/ubi8/ubi-minimal:${BASE_IMAGE_TAG}
+FROM ${REGISTRY_REDSOFT}/ubi8/ubi-minimal:${BASE_IMAGE_TAG} AS base
 ARG BUILD_ENVIRONMENT="devzone"
 
 USER 0
 
-# Trust builds replace package repositories and install corporate CA certificates.
+# Для trust-сборки подменяем репозитории пакетов и добавляем корпоративные CA.
 RUN --mount=type=bind,from=common,target=/common \
     if [ "${BUILD_ENVIRONMENT}" = "trust" ]; then \
         rm -rf /etc/yum.repos.d/* && \
@@ -24,23 +24,32 @@ RUN --mount=type=bind,from=common,target=/common \
         grep -q "Gazprom" /etc/pki/tls/certs/ca-bundle.crt && echo "Gazprom certificates added to ca-bundle"; \
     fi
 
+FROM base AS builder
 ARG GO_VERSION="1.25.8"
-ENV GO_VERSION=${GO_VERSION}
 
-RUN dnf update -y && \
-    dnf install -y "golang-${GO_VERSION}" && \
+RUN dnf install -y "golang-${GO_VERSION}" && \
     dnf clean all && \
     rm -rf /var/cache/dnf
 
+FROM base
+ARG GO_VERSION="1.25.8"
+ENV GO_VERSION=${GO_VERSION}
+ENV GOROOT=/usr/lib/golang
 ENV GOPATH=/go
-ENV PATH=${PATH}:${GOPATH}/bin
+ENV GOCACHE=${GOPATH}/.cache/go-build
+ENV CGO_ENABLED=0
+ENV PATH=${GOROOT}/bin:${GOPATH}/bin:${PATH}
+
+COPY --from=builder /usr/lib/golang /usr/lib/golang
 
 WORKDIR /workspace
 
-RUN mkdir -p "${GOPATH}" /workspace && \
-    chmod -R 755 "${GOPATH}" /workspace
-
 ARG APP_UID=1001
+RUN mkdir -p "${GOPATH}" /workspace && \
+    echo "appuser:x:${APP_UID}:0:Application User:/workspace:/bin/sh" >> /etc/passwd && \
+    chown -R "${APP_UID}:0" "${GOPATH}" /workspace && \
+    chmod -R 775 "${GOPATH}" /workspace
+
 USER ${APP_UID}
 
 LABEL maintainer="GpnDs"
